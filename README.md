@@ -153,6 +153,14 @@ npm run demo     # run skillport on its own fixtures
 
 Issues and PRs welcome — new rules especially. See [CONTRIBUTING.md](./CONTRIBUTING.md); changes are tracked in [CHANGELOG.md](./CHANGELOG.md).
 
+## Related
+
+Part of a small set of honest-by-default QA tools for AI-assisted development:
+
+- **skillport** (this repo) — static cross-agent skill linter
+- **[skillmatrix](https://github.com/skyswordw/skillmatrix)** — behavioral cross-agent skill testing: run a skill on each agent and assert outcomes
+- **[claimcheck](https://github.com/skyswordw/claimcheck)** — a CI receipt for the claims your PR makes
+
 ## License
 
 MIT © skyswordw
