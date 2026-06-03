@@ -1,5 +1,6 @@
 # skillport
 
+[![npm](https://img.shields.io/npm/v/@skyswordw/skillport)](https://www.npmjs.com/package/@skyswordw/skillport)
 [![ci](https://github.com/skyswordw/skillport/actions/workflows/ci.yml/badge.svg)](https://github.com/skyswordw/skillport/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 ![node >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
@@ -49,11 +50,12 @@ The Agent Skills format is portable in theory, but each agent extends it. A skil
 
 ## Quick start
 
-No install required:
+No install required (published on npm, or run straight from GitHub):
 
 ```bash
 # Lint one skill, a skill dir, or a whole repo (recursively finds SKILL.md)
-npx github:skyswordw/skillport ./skills/my-skill
+npx @skyswordw/skillport ./skills/my-skill
+# or: npx github:skyswordw/skillport ./skills/my-skill
 
 # Only care about a subset of agents
 npx github:skyswordw/skillport ./skills --target claude-code,codex
