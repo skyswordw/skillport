@@ -1,0 +1,19 @@
+# Copy this into .github/workflows/skillport.yml in your skills repo.
+name: skill-portability
+on: [pull_request]
+jobs:
+  skillport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Option A: the composite action
+      - uses: skyswordw/skillport@main
+        with:
+          path: ./skills
+          target: claude-code,codex,cursor
+          # strict: "true"   # also fail on warnings
+
+      # Option B (equivalent, no action): plain npx
+      # - uses: actions/setup-node@v4
+      #   with: { node-version: 22 }
+      # - run: npx github:skyswordw/skillport ./skills --check

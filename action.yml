@@ -1,0 +1,30 @@
+name: "skillport"
+description: "Static cross-agent portability linter for agent skills (Claude Code, Codex, Cursor)."
+branding:
+  icon: "check-circle"
+  color: "purple"
+inputs:
+  path:
+    description: "A SKILL.md, a skill directory, or a repo to scan."
+    required: false
+    default: "."
+  target:
+    description: "Comma-separated agents: claude-code,codex,cursor,all."
+    required: false
+    default: "all"
+  strict:
+    description: "Also fail on warnings, not just breaks."
+    required: false
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+    - name: Run skillport
+      shell: bash
+      run: |
+        args=("${{ inputs.path }}" --target "${{ inputs.target }}" --check)
+        if [ "${{ inputs.strict }}" = "true" ]; then args+=(--strict); fi
+        npx -y github:skyswordw/skillport "${args[@]}"

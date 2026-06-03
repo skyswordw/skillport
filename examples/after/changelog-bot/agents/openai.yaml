@@ -1,0 +1,4 @@
+interface:
+  display_name: "Changelog Bot"
+  short_description: "Summarize recent commits into a Keep a Changelog entry"
+  default_prompt: "Use $changelog-bot to turn the last 20 commits into a Keep a Changelog entry for the version I name."
