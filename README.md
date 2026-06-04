@@ -135,6 +135,10 @@ Or plain `npx` (see [`examples/skillport.yml`](./examples/skillport.yml)):
 - run: npx github:skyswordw/skillport ./skills --check
 ```
 
+## Seen in the wild
+
+I scanned **200 `SKILL.md` files from 184 public repos** with skillport. **41% aren't valid Agent Skills** at all (missing `name`/`description` — broken on every agent), and of the ones that *are* valid, **~1 in 6 use Claude-only features** (`allowed-tools`, `$ARGUMENTS`, `disable-model-invocation`) that silently break on Codex/Cursor. Full writeup with method and caveats: [docs/portability-in-the-wild.md](./docs/portability-in-the-wild.md).
+
 ## Roadmap
 
 `skillport` is the static half of a bigger idea. Next: **behavioral** cross-agent testing — actually running a skill headlessly on `claude -p` and `codex exec` against a fixture repo and asserting the outcomes match. Static portability first, behavior matrix next.
