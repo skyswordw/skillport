@@ -55,7 +55,7 @@ function defineRule(def: RuleDef): Rule {
 
 const has = (s: ParsedSkill, key: string): boolean => key in s.frontmatter;
 const val = (s: ParsedSkill, key: string): string => s.frontmatter[key] ?? "";
-const NAME_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+const NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const RULES: Rule[] = [
   // ---- Portable-core validation (all agents) --------------------------------
@@ -254,8 +254,12 @@ export const RULES: Rule[] = [
     affectedAgents: CODEX_CURSOR,
     sourceUrl: CLAUDE,
     detect(s) {
-      const inline = /!`[^`\n]+`/.test(s.body);
-      const fenced = /^```!/m.test(s.body);
+      // The ```! fenced block is the real Claude feature (check on raw body).
+      const fenced = /^[ \t]*```!/m.test(s.body);
+      // For inline !`cmd`, ignore anything inside ordinary fenced code blocks
+      // (e.g. a shell subshell documented in a ```bash block is not injection).
+      const stripped = s.body.replace(/```[\s\S]*?```/g, "");
+      const inline = /!`[^`\n]+`/.test(stripped);
       if (inline || fenced) {
         return {
           message: "Dynamic context injection (`` !`cmd` `` or a ```! block) runs shell before Claude reads the skill; Codex and Cursor treat it as literal text.",
@@ -273,7 +277,11 @@ export const RULES: Rule[] = [
     affectedAgents: CODEX_CURSOR,
     sourceUrl: CLAUDE,
     detect(s) {
-      const m = /\$ARGUMENTS\b/.test(s.body) || /\$\{CLAUDE_[A-Z0-9_]+\}/.test(s.body) || /(^|\s)\$[1-9]\b/.test(s.body);
+      // The $[1-9] branch excludes currency/versions/ranges: $1.50, $1.2.3, $1-2, $1,999.
+      const m =
+        /\$ARGUMENTS\b/.test(s.body) ||
+        /\$\{CLAUDE_[A-Z0-9_]+\}/.test(s.body) ||
+        /(^|\s)\$[1-9](?![\d.,-])(?:\s|$)/.test(s.body);
       if (m) {
         return {
           message: "String substitutions (`$ARGUMENTS`, `$1`, `${CLAUDE_SESSION_ID}`) are expanded by Claude Code only; other agents leave them literal.",
@@ -313,13 +321,18 @@ export const RULES: Rule[] = [
       const patterns: Array<[RegExp, string]> = [
         [/\b(?:npm|pnpm|yarn)\s+(?:i|install|add)\b/, "package install"],
         [/\bpip3?\s+install\b/, "pip install"],
-        [/\bcurl\b/, "curl"],
-        [/\bwget\b/, "wget"],
+        [/\bcurl\b(?![-\w])/, "curl"],
+        [/\bwget\b(?![-\w])/, "wget"],
         [/\bgit\s+clone\b/, "git clone"],
       ];
       for (const script of s.files.scripts) {
+        // Ignore full-line shell comments so a mention in a `#` comment doesn't trip the rule.
+        const code = script.content
+          .split("\n")
+          .filter((l) => !/^\s*#/.test(l))
+          .join("\n");
         for (const [re, label] of patterns) {
-          if (re.test(script.content)) {
+          if (re.test(code)) {
             return {
               message: `Script "${script.path}" uses ${label}, but Codex runs skills sandboxed with networking OFF by default, so it will fail or require approval.`,
               fix: "Vendor dependencies, gate network steps behind an explicit approval note, or document the requirement in `compatibility`.",
@@ -329,6 +342,36 @@ export const RULES: Rule[] = [
         }
       }
       return null;
+    },
+  }),
+  defineRule({
+    id: "FRONTMATTER-001",
+    title: "Unknown or misspelled frontmatter field",
+    severity: "warning",
+    affectedAgents: ALL,
+    sourceUrl: SPEC,
+    detect(s) {
+      const KNOWN = new Set([
+        "name", "description", "context", "agent", "hooks", "allowed-tools", "disallowed-tools",
+        "model", "effort", "disable-model-invocation", "user-invocable", "disable-slash-commands",
+        "paths", "shell", "argument-hint", "arguments", "when_to_use", "when-to-use",
+        "compatibility", "license", "metadata", "version",
+      ]);
+      const unknown: string[] = [];
+      let hint = "";
+      for (const key of s.frontmatterKeys) {
+        const k = key.toLowerCase();
+        if (KNOWN.has(k)) continue;
+        const kebab = k.replace(/_/g, "-");
+        if (kebab !== k && KNOWN.has(kebab)) hint = ` (did you mean \`${kebab}\`?)`;
+        unknown.push(key);
+      }
+      if (unknown.length === 0) return null;
+      return {
+        message: `Unrecognized frontmatter field(s): ${unknown.map((u) => `\`${u}\``).join(", ")}${hint}. Agents silently ignore unknown keys, so a typo'd field does nothing.`,
+        fix: "Use a documented field name (kebab-case), or put custom data under `metadata:`.",
+        location: `frontmatter:${unknown[0]}`,
+      };
     },
   }),
 ];

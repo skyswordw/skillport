@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-04
+
+Hardening pass (from a multi-lens audit), focused on false positives — the
+things that erode a linter's trust.
+
+### Fixed
+- `NAMING-001` now rejects consecutive hyphens (`skill--double`) and leading/
+  trailing hyphens, instead of silently passing them.
+- `SUBSTITUTION-001` no longer false-positives on currency / versions / ranges
+  (`$1.50`, `$1.2.3`, `$1-2`, `$1,999`).
+- `INJECTION-001` ignores `` !`cmd` `` inside fenced code blocks (documenting a
+  shell subshell in a ```bash block is no longer flagged).
+- `SANDBOX-001` no longer matches `curl`/`wget` inside hyphenated names
+  (`curl-tool`) or `#` comment lines.
+
+### Added
+- `FRONTMATTER-001`: warns on unknown / misspelled frontmatter fields (e.g.
+  `disable_model_invocation`) that agents silently ignore.
+
 ## [0.1.0] - 2026-06-03
 
 Initial release: static cross-agent portability linting for agent skills.

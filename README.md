@@ -96,6 +96,7 @@ npx github:skyswordw/skillport ./skills --json
 | `SUBSTITUTION-001` | warning | codex, cursor | `$ARGUMENTS`, `$1`, `${CLAUDE_*}` substitution |
 | `INVOCATION-001` | warning | codex | `disable-model-invocation` without an `agents/openai.yaml` equivalent |
 | `SANDBOX-001` | warning | codex | Scripts using `npm/pip install`, `curl`, `wget`, `git clone` under Codex's network-off sandbox |
+| `FRONTMATTER-001` | warning | all | Unknown/misspelled frontmatter fields (e.g. `disable_model_invocation`) that agents silently ignore |
 
 Every rule links to the authoritative Claude Code / Codex / Agent Skills documentation it is based on.
 
