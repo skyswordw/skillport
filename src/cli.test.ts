@@ -17,7 +17,7 @@ test("resolveTargets: aliases, all, and errors", () => {
 test("--help and --version", () => {
   assert.equal(runCli(["--help"]).exitCode, 0);
   assert.match(runCli(["--help"]).output, /static cross-agent skill portability linter/);
-  assert.equal(runCli(["--version"]).output.trim(), "0.3.0");
+  assert.equal(runCli(["--version"]).output.trim(), "0.4.0");
 });
 
 test("unknown target exits 2", () => {

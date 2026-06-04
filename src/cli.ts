@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 import { parseArgs } from "node:util";
-import { realpathSync } from "node:fs";
+import { realpathSync, existsSync } from "node:fs";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ALL_AGENTS } from "./types.js";
 import type { AgentId } from "./types.js";
 import { discoverSkills, parseSkillFile } from "./parser.js";
 import { lintSkill } from "./engine.js";
 import { renderHuman, renderJson, renderSarif } from "./report.js";
+import { scaffoldFiles, writeScaffold, SKILL_NAME_RE } from "./init.js";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const AGENT_ALIASES: Record<string, AgentId> = {
   claude: "claude-code",
@@ -26,6 +28,7 @@ before you publish.
 
 Usage:
   skillport [path] [options]
+  skillport init <skill-name> [--description "..."] [--dir <parent>] [--no-codex]
 
 Arguments:
   path                 A SKILL.md, a skill directory, or a repo to scan
@@ -44,6 +47,7 @@ Options:
   -v, --version        Show version
 
 Examples:
+  skillport init my-new-skill
   skillport ./skills/my-skill
   skillport . --target claude-code,codex --check
   npx github:skyswordw/skillport ./skills --json
@@ -75,6 +79,9 @@ export function runCli(argv: string[], env: { color?: boolean } = {}): CliResult
       options: {
         target: { type: "string", short: "t" },
         quiet: { type: "boolean", short: "q", default: false },
+        description: { type: "string" },
+        dir: { type: "string" },
+        "no-codex": { type: "boolean", default: false },
         json: { type: "boolean", default: false },
         sarif: { type: "boolean", default: false },
         check: { type: "boolean", default: false },
@@ -91,6 +98,27 @@ export function runCli(argv: string[], env: { color?: boolean } = {}): CliResult
   const { values, positionals } = parsed;
   if (values.help) return { output: HELP, exitCode: 0 };
   if (values.version) return { output: `${VERSION}\n`, exitCode: 0 };
+
+  // `skillport init <name>` — scaffold a new, portable skill.
+  if (positionals[0] === "init") {
+    const name = positionals[1];
+    if (!name) {
+      return { output: 'usage: skillport init <skill-name> [--description "..."] [--dir <parent>] [--no-codex]', exitCode: 2 };
+    }
+    if (!SKILL_NAME_RE.test(name) || name.length > 64) {
+      return { output: `error: "${name}" is not a valid skill name (lowercase kebab-case, single internal hyphens, max 64).`, exitCode: 2 };
+    }
+    const targetDir = join(values.dir ?? ".", name);
+    if (existsSync(targetDir)) {
+      return { output: `error: ${targetDir} already exists — refusing to overwrite.`, exitCode: 2 };
+    }
+    const written = writeScaffold(targetDir, scaffoldFiles(name, values.description, !values["no-codex"]));
+    const list = written.map((w) => `  ${relative(process.cwd(), w)}`).join("\n");
+    return {
+      output: `Created portable skill "${name}":\n${list}\n\nNext: fill in the description + steps, then check it:\n  skillport ${targetDir}`,
+      exitCode: 0,
+    };
+  }
 
   let targets: AgentId[];
   try {

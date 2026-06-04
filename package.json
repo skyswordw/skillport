@@ -1,6 +1,6 @@
 {
   "name": "@skyswordw/skillport",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Static cross-agent portability linter for agent skills: will your SKILL.md work on Claude Code, Codex, and Cursor? Catch what breaks before you publish.",
   "type": "module",
   "bin": {

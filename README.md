@@ -78,6 +78,16 @@ npx github:skyswordw/skillport ./skills --json
 | `--strict` | With `--check`, also fail on warnings |
 | `--no-color` | Disable ANSI color |
 
+## Create a portable skill
+
+Scaffold a new skill that's valid and portable from the first commit — it passes skillport at grade A out of the box:
+
+```bash
+npx @skyswordw/skillport init my-skill --description "What it does; when to use it"
+```
+
+This writes `my-skill/SKILL.md` (with the required `name` + `description`) and `my-skill/agents/openai.yaml` (the Codex adapter). Use `--no-codex` to skip the adapter, or `--dir <parent>` to choose where it's created.
+
 ## What it checks (v0.1)
 
 | Rule | Severity | Breaks on | What it catches |

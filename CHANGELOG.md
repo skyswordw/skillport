@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-04
+
+### Added
+- `skillport init <name>` — scaffold a new, **portable** skill (a valid
+  `SKILL.md` with the required `name`/`description` + a Codex `agents/openai.yaml`
+  adapter). The generated skill passes skillport at grade A out of the box.
+  Flags: `--description`, `--dir`, `--no-codex`. Directly addresses the most
+  common real-world failure (skills missing `name`/`description`).
+
 ## [0.3.0] - 2026-06-04
 
 ### Added
