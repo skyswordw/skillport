@@ -17,7 +17,7 @@ test("resolveTargets: aliases, all, and errors", () => {
 test("--help and --version", () => {
   assert.equal(runCli(["--help"]).exitCode, 0);
   assert.match(runCli(["--help"]).output, /static cross-agent skill portability linter/);
-  assert.equal(runCli(["--version"]).output.trim(), "0.1.0");
+  assert.equal(runCli(["--version"]).output.trim(), "0.3.0");
 });
 
 test("unknown target exits 2", () => {
@@ -62,6 +62,22 @@ test("--quiet prints one line per skill and no finding detail", () => {
   assert.ok(!out.includes("fix:"), "quiet mode hides fix detail");
   assert.match(out, /claude-only-skill/);
   assert.match(out, /worst portability/);
+});
+
+test("--sarif emits valid SARIF 2.1.0 with located results", () => {
+  const sarif = JSON.parse(runCli([FIXTURES, "--sarif"]).output);
+  assert.equal(sarif.version, "2.1.0");
+  const driver = sarif.runs[0].tool.driver;
+  assert.equal(driver.name, "skillport");
+  assert.ok(driver.rules.length > 0, "rules array populated");
+  const results = sarif.runs[0].results;
+  assert.ok(results.length > 0, "results populated");
+  const fork = results.find((r: { ruleId: string }) => r.ruleId === "FORK-001");
+  assert.ok(fork, "FORK-001 result present");
+  assert.equal(fork.level, "error");
+  const loc = fork.locations[0].physicalLocation;
+  assert.match(loc.artifactLocation.uri, /SKILL\.md$/);
+  assert.ok(loc.region.startLine >= 1);
 });
 
 test("no SKILL.md found exits 2", () => {

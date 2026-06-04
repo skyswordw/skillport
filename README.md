@@ -136,6 +136,27 @@ Or plain `npx` (see [`examples/skillport.yml`](./examples/skillport.yml)):
 - run: npx github:skyswordw/skillport ./skills --check
 ```
 
+### Inline PR annotations (GitHub code scanning)
+
+Emit SARIF and upload it, and findings show up **inline on the PR's "Files changed" tab**:
+
+```yaml
+name: skillport
+on: [pull_request]
+permissions:
+  security-events: write
+jobs:
+  skillport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npx @skyswordw/skillport ./skills --sarif > skillport.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: skillport.sarif }
+```
+
 ## Seen in the wild
 
 I scanned **200 `SKILL.md` files from 184 public repos** with skillport. **41% aren't valid Agent Skills** at all (missing `name`/`description` — broken on every agent), and of the ones that *are* valid, **~1 in 6 use Claude-only features** (`allowed-tools`, `$ARGUMENTS`, `disable-model-invocation`) that silently break on Codex/Cursor. Full writeup with method and caveats: [docs/portability-in-the-wild.md](./docs/portability-in-the-wild.md).

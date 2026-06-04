@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-04
+
+### Added
+- `--sarif`: emit SARIF 2.1.0 so findings appear as **inline annotations on a
+  PR's "Files changed" tab** via `github/codeql-action/upload-sarif`. Results
+  carry per-finding file + best-effort line locations; rules link to the spec.
+
 ## [0.2.0] - 2026-06-04
 
 Hardening pass (from a multi-lens audit), focused on false positives — the

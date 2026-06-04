@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import { ALL_AGENTS } from "./types.js";
 import { discoverSkills, parseSkillFile } from "./parser.js";
 import { lintSkill } from "./engine.js";
-import { renderHuman, renderJson } from "./report.js";
-const VERSION = "0.1.0";
+import { renderHuman, renderJson, renderSarif } from "./report.js";
+const VERSION = "0.3.0";
 const AGENT_ALIASES = {
     claude: "claude-code",
     "claude-code": "claude-code",
@@ -34,6 +34,7 @@ Options:
       --json           Output machine-readable JSON
       --check          Exit non-zero if any targeted agent BREAKS (errors)
       --strict         With --check, also fail on warnings
+      --sarif          Output SARIF 2.1.0 (for GitHub code scanning annotations)
       --no-color       Disable ANSI color
   -h, --help           Show this help
   -v, --version        Show version
@@ -68,6 +69,7 @@ export function runCli(argv, env = {}) {
                 target: { type: "string", short: "t" },
                 quiet: { type: "boolean", short: "q", default: false },
                 json: { type: "boolean", default: false },
+                sarif: { type: "boolean", default: false },
                 check: { type: "boolean", default: false },
                 strict: { type: "boolean", default: false },
                 "no-color": { type: "boolean", default: false },
@@ -103,7 +105,11 @@ export function runCli(argv, env = {}) {
     }
     const reports = skillPaths.map((p) => lintSkill(parseSkillFile(p), targets));
     const color = (env.color ?? false) && !values["no-color"];
-    const output = values.json ? renderJson(reports) : renderHuman(reports, { color, quiet: values.quiet });
+    const output = values.sarif
+        ? renderSarif(reports, VERSION)
+        : values.json
+            ? renderJson(reports)
+            : renderHuman(reports, { color, quiet: values.quiet });
     let exitCode = 0;
     if (values.check) {
         const failing = reports.some((r) => r.overallStatus === "breaks" || (values.strict && r.overallStatus === "warns"));

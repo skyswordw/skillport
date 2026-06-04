@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { dirname, relative, resolve, sep } from "node:path";
 const STATUS_MARK = { works: "✓", warns: "⚠", breaks: "✗" };
 const SEV_MARK = { error: "✗", warning: "⚠", info: "ℹ" };
 // ---- tiny ANSI helpers (no dependency) --------------------------------------
@@ -57,4 +59,88 @@ export function renderHuman(reports, opts = {}) {
 /** Machine-readable report for CI. */
 export function renderJson(reports) {
     return JSON.stringify({ summary: summarize(reports), skills: reports }, null, 2);
+}
+// ---- SARIF 2.1.0 (GitHub code scanning) -------------------------------------
+const SARIF_LEVEL = { error: "error", warning: "warning", info: "note" };
+function toUri(p) {
+    const rel = relative(process.cwd(), p) || p;
+    return rel.split(sep).join("/");
+}
+function locate(skillMdPath, location) {
+    const skillDir = dirname(skillMdPath);
+    let uri = toUri(skillMdPath);
+    let line = 1;
+    if (location) {
+        if (location.startsWith("frontmatter:")) {
+            const key = location.slice("frontmatter:".length).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            try {
+                const lines = readFileSync(skillMdPath, "utf8").split(/\r?\n/);
+                const i = lines.findIndex((l) => new RegExp(`^${key}\\s*:`).test(l));
+                if (i >= 0)
+                    line = i + 1;
+            }
+            catch {
+                /* keep line 1 */
+            }
+        }
+        else if (location === "body") {
+            try {
+                const lines = readFileSync(skillMdPath, "utf8").split(/\r?\n/);
+                let fences = 0;
+                let i = 0;
+                for (; i < lines.length; i++) {
+                    if (/^---\s*$/.test(lines[i] ?? "")) {
+                        fences++;
+                        if (fences === 2) {
+                            i += 2;
+                            break;
+                        }
+                    }
+                }
+                line = Math.min(Math.max(1, i), lines.length || 1);
+            }
+            catch {
+                /* keep line 1 */
+            }
+        }
+        else if (location.includes("/") && !location.endsWith("/")) {
+            uri = toUri(resolve(skillDir, location)); // a bundled script
+        }
+    }
+    return { uri, line: Math.max(1, line) };
+}
+/** Emit SARIF 2.1.0 so findings appear as inline PR annotations via GitHub code scanning. */
+export function renderSarif(reports, version) {
+    const ruleMap = new Map();
+    const results = reports.flatMap((r) => r.findings.map((f) => {
+        if (!ruleMap.has(f.ruleId))
+            ruleMap.set(f.ruleId, f);
+        const { uri, line } = locate(r.skillMdPath, f.location);
+        return {
+            ruleId: f.ruleId,
+            level: SARIF_LEVEL[f.severity],
+            message: { text: `${f.message} Fix: ${f.fix} [affects: ${f.affectedAgents.join(", ")}]` },
+            locations: [{ physicalLocation: { artifactLocation: { uri }, region: { startLine: line } } }],
+        };
+    }));
+    const rules = [...ruleMap.values()].map((f) => ({
+        id: f.ruleId,
+        name: f.title.replace(/[^A-Za-z0-9]/g, ""),
+        shortDescription: { text: f.title },
+        helpUri: f.sourceUrl,
+        defaultConfiguration: { level: SARIF_LEVEL[f.severity] },
+    }));
+    const sarif = {
+        $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+        version: "2.1.0",
+        runs: [
+            {
+                tool: {
+                    driver: { name: "skillport", informationUri: "https://github.com/skyswordw/skillport", version, rules },
+                },
+                results,
+            },
+        ],
+    };
+    return JSON.stringify(sarif, null, 2);
 }

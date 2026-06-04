@@ -16,3 +16,5 @@ export declare function summarize(reports: SkillReport[]): Summary;
 export declare function renderHuman(reports: SkillReport[], opts?: RenderOptions): string;
 /** Machine-readable report for CI. */
 export declare function renderJson(reports: SkillReport[]): string;
+/** Emit SARIF 2.1.0 so findings appear as inline PR annotations via GitHub code scanning. */
+export declare function renderSarif(reports: SkillReport[], version: string): string;
